@@ -1,47 +1,65 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using Android.App;
-using Android.Content;
-using Android.OS;
-using Android.Runtime;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Android.App;
+using Android.Content;
+using Android.Runtime;
 
 namespace AuthenticatorPro.Droid.Activity
 {
-    internal abstract class AsyncActivity : BaseActivity
+    public abstract class AsyncActivity : BaseActivity, IDisposable
     {
-        private readonly SemaphoreSlim _onCreateLock;
         private readonly SemaphoreSlim _onResumeLock;
+        private bool _isDisposed;
 
         protected AsyncActivity(int layout) : base(layout)
         {
-            _onCreateLock = new SemaphoreSlim(1, 1);
             _onResumeLock = new SemaphoreSlim(1, 1);
         }
 
-        protected override async void OnCreate(Bundle savedInstanceState)
+        public new void Dispose()
         {
-            base.OnCreate(savedInstanceState);
-
-            await _onCreateLock.WaitAsync();
-            await OnCreateAsync(savedInstanceState);
-            _onCreateLock.Release();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        protected abstract Task OnCreateAsync(Bundle savedInstanceState);
+        ~AsyncActivity()
+        {
+            Dispose(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    _onResumeLock.Dispose();
+                }
+
+                _isDisposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
 
         protected override async void OnResume()
         {
             base.OnResume();
 
-            await _onCreateLock.WaitAsync();
-            _onCreateLock.Release();
-
             await _onResumeLock.WaitAsync();
-            await OnResumeAsync();
-            _onResumeLock.Release();
+
+            try
+            {
+                await OnResumeAsync();
+            }
+            finally
+            {
+                _onResumeLock.Release();
+            }
         }
 
         protected abstract Task OnResumeAsync();
@@ -52,9 +70,15 @@ namespace AuthenticatorPro.Droid.Activity
             base.OnActivityResult(requestCode, resultCode, intent);
 
             await _onResumeLock.WaitAsync();
-            _onResumeLock.Release();
 
-            await OnActivityResultAsync(requestCode, resultCode, intent);
+            try
+            {
+                await OnActivityResultAsync(requestCode, resultCode, intent);
+            }
+            finally
+            {
+                _onResumeLock.Release();
+            }
         }
 
         protected abstract Task

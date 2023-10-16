@@ -1,25 +1,25 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using Android.App;
-using Android.Content;
-using Android.Runtime;
-using AndroidX.Lifecycle;
-using AuthenticatorPro.Droid.Activity;
-using AuthenticatorPro.Droid.Util;
-using Java.Interop;
 using System;
 using System.Threading.Tasks;
 using System.Timers;
+using Android.App;
+using Android.Content;
+using Android.OS;
+using Android.Runtime;
+using AndroidX.Lifecycle;
+using AuthenticatorPro.Droid.Activity;
+using Java.Interop;
 
 namespace AuthenticatorPro.Droid
 {
 #if DEBUG
-    [Application(Debuggable = true)]
+    [Application(Debuggable = true, TaskAffinity = "")]
 #else
-    [Application(Debuggable = false)]
+    [Application(Debuggable = false, TaskAffinity = "")]
 #endif
-    internal class BaseApplication : Application, ILifecycleObserver
+    public class BaseApplication : Application, ILifecycleObserver
     {
         public bool AutoLockEnabled { get; set; }
         public bool PreventNextAutoLock { get; set; }
@@ -30,13 +30,13 @@ namespace AuthenticatorPro.Droid
 
         public BaseApplication(IntPtr javaReference, JniHandleOwnership transfer) : base(javaReference, transfer)
         {
-            Dependencies.Register();
+            _database = new Database();
+
+            Dependencies.Register(_database);
             Dependencies.RegisterApplicationContext(this);
 
             AutoLockEnabled = false;
             PreventNextAutoLock = false;
-
-            _database = Dependencies.Resolve<Database>();
         }
 
         public override void OnCreate()
@@ -49,6 +49,11 @@ namespace AuthenticatorPro.Droid
 
             ProcessLifecycleOwner.Get().Lifecycle.AddObserver(this);
             _preferences = new PreferenceWrapper(Context);
+
+            if (_preferences.FirstLaunch)
+            {
+                _preferences.DynamicColour = Build.VERSION.SdkInt >= BuildVersionCodes.S;
+            }
         }
 
         private void OnAndroidEnvironmentUnhandledExceptionRaised(object sender, RaiseThrowableEventArgs e)
@@ -78,7 +83,7 @@ namespace AuthenticatorPro.Droid
             StartActivity(intent);
         }
 
-        [Lifecycle.Event.OnStopAttribute]
+        [Lifecycle.Event.OnStop]
         [Export]
         public async void OnStopped()
         {
@@ -95,33 +100,28 @@ namespace AuthenticatorPro.Droid
 
             if (!_preferences.PasswordProtected || _preferences.Timeout == 0)
             {
-                await _database.Close();
+                await _database.CloseAsync(Database.Origin.Application);
             }
             else
             {
                 _timeoutTimer = new Timer(_preferences.Timeout * 1000) { AutoReset = false };
-
-                _timeoutTimer.Elapsed += async delegate
-                {
-                    await _database.Close();
-                };
-
+                _timeoutTimer.Elapsed += async delegate { await _database.CloseAsync(Database.Origin.Application); };
                 _timeoutTimer.Start();
             }
         }
 
-        [Lifecycle.Event.OnStartAttribute]
+        [Lifecycle.Event.OnStart]
         [Export]
         public void OnStarted()
         {
             _timeoutTimer?.Stop();
         }
 
-        [Lifecycle.Event.OnDestroyAttribute]
+        [Lifecycle.Event.OnDestroy]
         [Export]
         public async void OnDestroyed()
         {
-            await _database.Close();
+            await _database.CloseAsync(Database.Origin.Application);
         }
     }
 }

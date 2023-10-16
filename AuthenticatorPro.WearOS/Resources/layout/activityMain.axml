@@ -29,7 +29,7 @@
             <TextView
                 android:text="@string/noAuthenticators"
                 android:textColor="?attr/primaryTextColor"
-                android:textSize="16dp"
+                android:textSize="16sp"
                 android:layout_marginBottom="4dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_width="wrap_content"
@@ -38,7 +38,7 @@
             <TextView
                 android:text="@string/noAuthenticatorsMessage"
                 android:textColor="?attr/secondaryTextColor"
-                android:textSize="12dp"
+                android:textSize="12sp"
                 android:gravity="center_horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
@@ -75,7 +75,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/offline"
-                android:src="@drawable/ic_action_cloud_off"/>
+                android:src="@drawable/baseline_cloud_off_24"/>
 
         </LinearLayout>
 

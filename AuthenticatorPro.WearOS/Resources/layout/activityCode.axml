@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<authenticatorpro.wearos.customview.AuthProgressLayout
+<authenticatorpro.wearos.interface.AuthProgressLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layoutAuthProgress"
@@ -33,7 +32,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="2dp"
-                android:textSize="14dp"
+                android:textSize="14sp"
                 android:gravity="center_horizontal"
                 android:textColor="?attr/primaryTextColor"
                 android:singleLine="true"
@@ -44,7 +43,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
-                android:textSize="12dp"
+                android:textSize="12sp"
                 android:gravity="center_horizontal"
                 android:textColor="?attr/secondaryTextColor"
                 android:singleLine="true"
@@ -55,13 +54,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_horizontal"
                 android:textColor="?attr/primaryTextColor"
-                android:textSize="28dp"
+                android:textSize="28sp"
+                android:textDirection="ltr"
                 android:fontFamily="sans-serif-condensed"
                 android:maxLines="1"
                 android:id="@+id/textCode"/>
 
         </LinearLayout>
-
     </RelativeLayout>
-
-</authenticatorpro.wearos.customview.AuthProgressLayout>
+</authenticatorpro.wearos.interface.AuthProgressLayout>

@@ -1,38 +1,42 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
+using System.Text;
 using Android.App;
 using Android.Content;
 using Android.Net;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Google.Android.Material.AppBar;
+using AndroidX.Core.Graphics;
+using AndroidX.Core.Widget;
+using AuthenticatorPro.Droid.Util;
 using Google.Android.Material.Dialog;
-using System.Text;
+using Google.Android.Material.Snackbar;
+using Google.Android.Material.TextView;
 
 namespace AuthenticatorPro.Droid.Activity
 {
     [Activity]
-    internal class ErrorActivity : BaseActivity
+    public class ErrorActivity : BaseActivity
     {
         private string _exception;
 
-        public ErrorActivity() : base(Resource.Layout.activityError) { }
+        public ErrorActivity() : base(Resource.Layout.activityError)
+        {
+        }
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
-            var toolbar = FindViewById<MaterialToolbar>(Resource.Id.toolbar);
-            SetSupportActionBar(toolbar);
             SupportActionBar.SetTitle(Resource.String.error);
             SupportActionBar.SetDisplayHomeAsUpEnabled(true);
             SupportActionBar.SetDisplayShowHomeEnabled(true);
-            SupportActionBar.SetHomeAsUpIndicator(Resource.Drawable.ic_action_arrow_back);
+            SupportActionBar.SetHomeAsUpIndicator(Resource.Drawable.baseline_arrow_back_24);
 
             _exception = Intent.GetStringExtra("exception");
-            var textError = FindViewById<TextView>(Resource.Id.errorText);
+            var textError = FindViewById<MaterialTextView>(Resource.Id.errorText);
             textError.Text = _exception;
         }
 
@@ -90,9 +94,8 @@ namespace AuthenticatorPro.Droid.Activity
             var clip = ClipData.NewPlainText("error", _exception);
             clipboard.PrimaryClip = clip;
 
-            Toast.MakeText(this, Resource.String.errorCopiedToClipboard, ToastLength.Short).Show();
-
-            var intent = new Intent(Intent.ActionView, Uri.Parse($"{Constants.GitHubRepo}/issues"));
+            ShowSnackbar(Resource.String.errorCopiedToClipboard, Snackbar.LengthShort);
+            var intent = new Intent(Intent.ActionView, Uri.Parse($"{GetString(Resource.String.githubRepo)}/issues"));
 
             try
             {
@@ -100,7 +103,7 @@ namespace AuthenticatorPro.Droid.Activity
             }
             catch (ActivityNotFoundException)
             {
-                Toast.MakeText(this, Resource.String.webBrowserMissing, ToastLength.Short).Show();
+                ShowSnackbar(Resource.String.webBrowserMissing, Snackbar.LengthShort);
             }
         }
 
@@ -108,8 +111,7 @@ namespace AuthenticatorPro.Droid.Activity
         {
             try
             {
-                var packageInfo = PackageManager.GetPackageInfo(PackageName!, 0);
-                return packageInfo.VersionName;
+                return PackageUtil.GetVersionName(PackageManager, PackageName);
             }
             catch
             {
@@ -117,7 +119,7 @@ namespace AuthenticatorPro.Droid.Activity
             }
         }
 
-        private string GetDeviceName()
+        private static string GetDeviceName()
         {
             if (Build.Manufacturer != null && Build.Model.StartsWith(Build.Manufacturer))
             {
@@ -127,18 +129,31 @@ namespace AuthenticatorPro.Droid.Activity
             return $"{Build.Manufacturer} {Build.Model}";
         }
 
-        private string GetAndroidVersion()
+        private static string GetAndroidVersion()
         {
             return Build.VERSION.Release == null
                 ? null
                 : $"{Build.VERSION.Release} (API {Build.VERSION.SdkInt})";
         }
 
+        private string DecodeEmail()
+        {
+            var encoded = GetString(Resource.String.contactEmail).ToCharArray();
+            var decoded = new char[encoded.Length];
+
+            for (var i = 0; i < encoded.Length; ++i)
+            {
+                decoded[i] = i % 2 == 0 ? ++encoded[i] : --encoded[i];
+            }
+
+            return new string(decoded);
+        }
+
         private void ReportEmail()
         {
             var intent = new Intent(Intent.ActionSendto);
             intent.SetData(Uri.Parse("mailto:"));
-            intent.PutExtra(Intent.ExtraEmail, new[] { Constants.ContactEmail });
+            intent.PutExtra(Intent.ExtraEmail, new[] { DecodeEmail() });
             intent.PutExtra(Intent.ExtraSubject, "Bug report");
 
             var body = new StringBuilder();
@@ -164,8 +179,15 @@ namespace AuthenticatorPro.Droid.Activity
             }
             catch (ActivityNotFoundException)
             {
-                Toast.MakeText(this, Resource.String.emailClientMissing, ToastLength.Short).Show();
+                ShowSnackbar(Resource.String.emailClientMissing, Snackbar.LengthShort);
             }
+        }
+
+        protected override void OnApplySystemBarInsets(Insets insets)
+        {
+            base.OnApplySystemBarInsets(insets);
+            var scrollView = FindViewById<NestedScrollView>(Resource.Id.nestedScrollView);
+            scrollView.SetPadding(0, 0, 0, insets.Bottom);
         }
     }
 }

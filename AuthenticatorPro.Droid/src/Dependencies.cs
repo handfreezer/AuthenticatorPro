@@ -1,17 +1,20 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
+using System.Collections.Generic;
 using Android.Content;
+using AuthenticatorPro.Core;
+using AuthenticatorPro.Core.Backup.Encryption;
+using AuthenticatorPro.Core.Comparer;
+using AuthenticatorPro.Core.Entity;
+using AuthenticatorPro.Core.Persistence;
+using AuthenticatorPro.Core.Service;
+using AuthenticatorPro.Core.Service.Impl;
+using AuthenticatorPro.Droid.Interface;
 using AuthenticatorPro.Droid.Persistence;
-using AuthenticatorPro.Droid.Shared.Data;
-using AuthenticatorPro.Droid.Shared.View;
-using AuthenticatorPro.Droid.Shared.View.Impl;
-using AuthenticatorPro.Shared.Data;
-using AuthenticatorPro.Shared.Persistence;
-using AuthenticatorPro.Shared.Service;
-using AuthenticatorPro.Shared.Service.Impl;
-using AuthenticatorPro.Shared.View;
-using AuthenticatorPro.Shared.View.Impl;
+using AuthenticatorPro.Droid.Persistence.View;
+using AuthenticatorPro.Droid.Persistence.View.Impl;
+using AuthenticatorPro.Droid.Shared;
 using TinyIoC;
 
 namespace AuthenticatorPro.Droid
@@ -20,16 +23,21 @@ namespace AuthenticatorPro.Droid
     {
         private static readonly TinyIoCContainer Container = TinyIoCContainer.Current;
 
-        public static void Register()
+        public static void Register(Database database)
         {
-            Container.Register<Database>().AsSingleton();
+            Container.Register(database);
+            Container.RegisterMultiple<IBackupEncryption>(new[]
+            {
+                typeof(StrongBackupEncryption), typeof(LegacyBackupEncryption), typeof(NoBackupEncryption)
+            });
+
             Container.Register<IAssetProvider, AssetProvider>();
             Container.Register<ICustomIconDecoder, CustomIconDecoder>();
             Container.Register<IIconResolver, IconResolver>();
 
-            RegisterRepositories();
-            RegisterServices();
-            RegisterViews();
+            RegisterRepositories(Container);
+            RegisterServices(Container);
+            RegisterViews(Container);
         }
 
         public static void RegisterApplicationContext(Context context)
@@ -37,36 +45,54 @@ namespace AuthenticatorPro.Droid
             Container.Register(context);
         }
 
-        private static void RegisterRepositories()
+        public static TinyIoCContainer GetChildContainer()
         {
-            Container.Register<IAuthenticatorRepository, AuthenticatorRepository>();
-            Container.Register<ICategoryRepository, CategoryRepository>();
-            Container.Register<IAuthenticatorCategoryRepository, AuthenticatorCategoryRepository>();
-            Container.Register<ICustomIconRepository, CustomIconRepository>();
+            return Container.GetChildContainer();
         }
 
-        private static void RegisterServices()
+        public static void RegisterRepositories(TinyIoCContainer container)
         {
-            Container.Register<IAuthenticatorCategoryService, AuthenticatorCategoryService>();
-            Container.Register<IAuthenticatorService, AuthenticatorService>();
-            Container.Register<IBackupService, BackupService>();
-            Container.Register<ICategoryService, CategoryService>();
-            Container.Register<ICustomIconService, CustomIconService>();
-            Container.Register<IImportService, ImportService>();
-            Container.Register<IQrCodeService, QrCodeService>();
-            Container.Register<IRestoreService, RestoreService>();
+            container.Register<IAuthenticatorRepository, AuthenticatorRepository>();
+            container.Register<ICategoryRepository, CategoryRepository>();
+            container.Register<IAuthenticatorCategoryRepository, AuthenticatorCategoryRepository>();
+            container.Register<ICustomIconRepository, CustomIconRepository>();
+            container.Register<IIconPackRepository, IconPackRepository>();
+            container.Register<IIconPackEntryRepository, IconPackEntryRepository>();
         }
 
-        private static void RegisterViews()
+        public static void RegisterServices(TinyIoCContainer container)
         {
-            Container.Register<IAuthenticatorView, AuthenticatorView>().AsMultiInstance();
-            Container.Register<ICategoryView, CategoryView>().AsMultiInstance();
-            Container.Register<IIconView, IconView>().AsMultiInstance();
+            container.Register<IEqualityComparer<Authenticator>, AuthenticatorComparer>();
+            container.Register<IEqualityComparer<Category>, CategoryComparer>();
+            container.Register<IEqualityComparer<AuthenticatorCategory>, AuthenticatorCategoryComparer>();
+
+            container.Register<IAuthenticatorService, AuthenticatorService>();
+            container.Register<IBackupService, BackupService>();
+            container.Register<ICategoryService, CategoryService>();
+            container.Register<ICustomIconService, CustomIconService>();
+            container.Register<IIconPackService, IconPackService>();
+            container.Register<IImportService, ImportService>();
+            container.Register<IRestoreService, RestoreService>();
+        }
+
+        public static void RegisterViews(TinyIoCContainer container)
+        {
+            container.Register<IAuthenticatorView, AuthenticatorView>().AsMultiInstance();
+            container.Register<ICategoryView, CategoryView>().AsMultiInstance();
+            container.Register<ICustomIconView, CustomIconView>().AsMultiInstance();
+            container.Register<IDefaultIconView, DefaultIconView>().AsMultiInstance();
+            container.Register<IIconPackEntryView, IconPackEntryView>().AsMultiInstance();
+            container.Register<IIconPackView, IconPackView>().AsMultiInstance();
         }
 
         public static T Resolve<T>() where T : class
         {
             return Container.Resolve<T>();
+        }
+
+        public static IEnumerable<T> ResolveAll<T>() where T : class
+        {
+            return Container.ResolveAll<T>();
         }
     }
 }

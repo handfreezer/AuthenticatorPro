@@ -1,53 +1,88 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using AuthenticatorPro.Droid.Util;
-using AuthenticatorPro.Shared.Entity;
-using SQLite;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using AuthenticatorPro.Core.Entity;
+using SQLite;
 
 namespace AuthenticatorPro.Droid
 {
-    internal class Database : IAsyncDisposable
+    public class Database : IAsyncDisposable
     {
+        public enum Origin
+        {
+            Application,
+            Activity,
+            Wear,
+            AutoBackup,
+            Gc,
+            Other
+        }
+
         private const string FileName = "proauth.db3";
 
         private const SQLiteOpenFlags Flags = SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite |
                                               SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.SharedCache;
 
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _lock = new(1, 1);
         private SQLiteAsyncConnection _connection;
-        public bool IsOpen => _connection != null;
 
-        public async Task<SQLiteAsyncConnection> GetConnection()
+        public async ValueTask DisposeAsync()
         {
-            await _lock.WaitAsync();
-
-            if (_connection == null)
-            {
-                _lock.Release();
-                throw new InvalidOperationException("Connection not open");
-            }
-
-            _lock.Release();
-            return _connection;
+            await CloseAsync(Origin.Gc);
         }
 
-        public async Task Close()
+        public async Task<SQLiteAsyncConnection> GetConnectionAsync()
         {
             await _lock.WaitAsync();
-
-            if (_connection == null)
-            {
-                _lock.Release();
-                return;
-            }
 
             try
             {
+                if (_connection == null)
+                {
+                    throw new InvalidOperationException("Connection not open");
+                }
+
+                return _connection;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        public async Task<bool> IsOpenAsync(Origin origin)
+        {
+            await _lock.WaitAsync();
+
+            try
+            {
+                var isOpen = _connection != null;
+                Logger.Debug($"Is database open from {origin}? {isOpen}");
+                return isOpen;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        public async Task CloseAsync(Origin origin)
+        {
+            await _lock.WaitAsync();
+
+            try
+            {
+                if (_connection == null)
+                {
+                    return;
+                }
+
+                Logger.Debug($"Closing database from {origin}");
+
                 await _connection.CloseAsync();
                 _connection = null;
             }
@@ -57,14 +92,9 @@ namespace AuthenticatorPro.Droid
             }
         }
 
-        public async Task<SQLiteAsyncConnection> Open(string password)
+        public async Task OpenAsync(string password, Origin origin)
         {
-            if (_connection != null)
-            {
-                await Close();
-            }
-
-            await _lock.WaitAsync();
+            Logger.Debug($"Opening database from {origin}");
 
             var path = GetPath();
             var firstLaunch = !File.Exists(path);
@@ -84,35 +114,53 @@ namespace AuthenticatorPro.Droid
                 }
             });
 
-            _connection = new SQLiteAsyncConnection(connStr);
+            await _lock.WaitAsync();
 
             try
             {
-                if (firstLaunch)
+                if (_connection != null)
                 {
-                    await _connection.EnableWriteAheadLoggingAsync();
+                    await _connection.CloseAsync();
                 }
 
-                await _connection.CreateTableAsync<Authenticator>();
-                await _connection.CreateTableAsync<Category>();
-                await _connection.CreateTableAsync<AuthenticatorCategory>();
-                await _connection.CreateTableAsync<CustomIcon>();
-            }
-            catch
-            {
-                _lock.Release();
-                await Close();
-                throw;
-            }
+                _connection = new SQLiteAsyncConnection(connStr);
+
+                try
+                {
+                    await MigrateAsync(firstLaunch);
+                }
+                catch
+                {
+                    await _connection.CloseAsync();
+                    _connection = null;
+                    throw;
+                }
 
 #if DEBUG
-            _connection.Trace = true;
-            _connection.Tracer = Logger.Info;
-            _connection.TimeExecution = true;
+                _connection.Trace = true;
+                _connection.Tracer = Logger.Debug;
+                _connection.TimeExecution = true;
 #endif
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
 
-            _lock.Release();
-            return _connection;
+        private async Task MigrateAsync(bool firstLaunch)
+        {
+            if (firstLaunch)
+            {
+                await _connection.EnableWriteAheadLoggingAsync();
+            }
+
+            await _connection.CreateTableAsync<Authenticator>();
+            await _connection.CreateTableAsync<Category>();
+            await _connection.CreateTableAsync<AuthenticatorCategory>();
+            await _connection.CreateTableAsync<CustomIcon>();
+            await _connection.CreateTableAsync<IconPack>();
+            await _connection.CreateTableAsync<IconPackEntry>();
         }
 
         private static string GetPath()
@@ -123,8 +171,13 @@ namespace AuthenticatorPro.Droid
             );
         }
 
-        public async Task SetPassword(string currentPassword, string newPassword)
+        public async Task SetPasswordAsync(string currentPassword, string newPassword)
         {
+            if (currentPassword == newPassword)
+            {
+                return;
+            }
+
             var dbPath = GetPath();
             var backupPath = dbPath + ".backup";
 
@@ -146,7 +199,7 @@ namespace AuthenticatorPro.Droid
 
             try
             {
-                conn = await GetConnection();
+                conn = await GetConnectionAsync();
                 await conn.ExecuteScalarAsync<string>("PRAGMA wal_checkpoint(TRUNCATE)");
             }
             catch
@@ -156,7 +209,7 @@ namespace AuthenticatorPro.Droid
             }
 
             // Change encryption mode
-            if ((currentPassword == null && newPassword != null) || (currentPassword != null && newPassword == null))
+            if (currentPassword == null || newPassword == null)
             {
                 var tempPath = dbPath + ".temp";
 
@@ -187,17 +240,17 @@ namespace AuthenticatorPro.Droid
 
                 try
                 {
-                    await Close();
+                    await CloseAsync(Origin.Other);
                     DeleteDatabase();
                     File.Move(tempPath, dbPath);
-                    await Open(newPassword);
+                    await OpenAsync(newPassword, Origin.Other);
                 }
                 catch
                 {
                     // Perhaps it wasn't moved correctly
                     File.Delete(tempPath);
                     RestoreBackup();
-                    await Open(currentPassword);
+                    await OpenAsync(currentPassword, Origin.Other);
                     throw;
                 }
                 finally
@@ -213,15 +266,15 @@ namespace AuthenticatorPro.Droid
 
                 try
                 {
-                    await conn.ExecuteAsync($"PRAGMA rekey = {quoted}");
+                    await conn.ExecuteScalarAsync<string>($"PRAGMA rekey = {quoted}");
 
-                    await Close();
-                    await Open(newPassword);
+                    await CloseAsync(Origin.Other);
+                    await OpenAsync(newPassword, Origin.Other);
                 }
                 catch
                 {
                     RestoreBackup();
-                    await Open(currentPassword);
+                    await OpenAsync(currentPassword, Origin.Other);
                     throw;
                 }
                 finally
@@ -229,11 +282,6 @@ namespace AuthenticatorPro.Droid
                     File.Delete(backupPath);
                 }
             }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await Close();
         }
     }
 }

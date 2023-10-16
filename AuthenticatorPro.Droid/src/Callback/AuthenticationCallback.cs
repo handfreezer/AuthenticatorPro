@@ -1,14 +1,14 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
+using System;
 using Android.Hardware.Biometrics;
 using Java.Lang;
-using System;
 using BiometricPrompt = AndroidX.Biometric.BiometricPrompt;
 
 namespace AuthenticatorPro.Droid.Callback
 {
-    internal class AuthenticationCallback : BiometricPrompt.AuthenticationCallback
+    public class AuthenticationCallback : BiometricPrompt.AuthenticationCallback
     {
         public event EventHandler<ErrorEventArgs> Errored;
         public event EventHandler Failed;
@@ -24,7 +24,7 @@ namespace AuthenticatorPro.Droid.Callback
         public override void OnAuthenticationFailed()
         {
             base.OnAuthenticationFailed();
-            Failed?.Invoke(this, null);
+            Failed?.Invoke(this, EventArgs.Empty);
         }
 
         public override void OnAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result)

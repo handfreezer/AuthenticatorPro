@@ -1,8 +1,6 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using Android.Content;
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,17 +8,18 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Android.Content;
+using Newtonsoft.Json;
 
 namespace AuthenticatorPro.WearOS.Cache
 {
-    internal class ListCache<T> : IEnumerable
+    public class ListCache<T> : IEnumerable, IDisposable
     {
         private readonly string _name;
         private readonly Context _context;
         private readonly SemaphoreSlim _flushLock;
         private List<T> _items;
-
-        public int Count => _items.Count;
+        private bool _isDisposed;
 
         public ListCache(string name, Context context)
         {
@@ -30,12 +29,51 @@ namespace AuthenticatorPro.WearOS.Cache
             _flushLock = new SemaphoreSlim(1, 1);
         }
 
+        public int Count => _items.Count;
+
+        public T this[int index]
+        {
+            get => _items[index];
+            set => _items[index] = value;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        ~ListCache()
+        {
+            Dispose(false);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                _flushLock.Dispose();
+            }
+
+            _isDisposed = true;
+        }
+
         private string GetFilePath()
         {
             return $"{_context.CacheDir}/{_name}.json";
         }
 
-        public async Task Init()
+        public async Task InitAsync()
         {
             var path = GetFilePath();
 
@@ -48,10 +86,10 @@ namespace AuthenticatorPro.WearOS.Cache
             _items = JsonConvert.DeserializeObject<List<T>>(json);
         }
 
-        public async Task Replace(List<T> items)
+        public async Task ReplaceAsync(List<T> items)
         {
             _items = items;
-            await Flush();
+            await FlushAsync();
         }
 
         public bool Dirty(IEnumerable<T> items, IEqualityComparer<T> comparer = null)
@@ -61,7 +99,7 @@ namespace AuthenticatorPro.WearOS.Cache
                 : !_items.SequenceEqual(items);
         }
 
-        private async Task Flush()
+        private async Task FlushAsync()
         {
             var json = JsonConvert.SerializeObject(_items);
             await _flushLock.WaitAsync();
@@ -86,20 +124,9 @@ namespace AuthenticatorPro.WearOS.Cache
             return _items.GetEnumerator();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
         public int FindIndex(Predicate<T> predicate)
         {
             return _items.FindIndex(predicate);
-        }
-
-        public T this[int index]
-        {
-            get => _items[index];
-            set => _items[index] = value;
         }
     }
 }

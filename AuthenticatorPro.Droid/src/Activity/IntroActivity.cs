@@ -1,27 +1,28 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
 using Android.App;
 using Android.OS;
 using AndroidX.ViewPager2.Adapter;
 using AndroidX.ViewPager2.Widget;
-using AuthenticatorPro.Droid.Adapter;
 using AuthenticatorPro.Droid.Callback;
-using AuthenticatorPro.Droid.Util;
+using AuthenticatorPro.Droid.Interface.Adapter;
 using Google.Android.Material.BottomNavigation;
 using Google.Android.Material.Navigation;
 
 namespace AuthenticatorPro.Droid.Activity
 {
     [Activity]
-    internal class IntroActivity : BaseActivity
+    public class IntroActivity : BaseActivity
     {
         private int _pageCount;
         private ViewPager2 _pager;
         private FragmentStateAdapter _adapter;
         private BottomNavigationView _nav;
 
-        public IntroActivity() : base(Resource.Layout.activityIntro) { }
+        public IntroActivity() : base(Resource.Layout.activityIntro)
+        {
+        }
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -34,13 +35,18 @@ namespace AuthenticatorPro.Droid.Activity
 
             _nav.ItemSelected += OnItemSelected;
 
-            var callback = new PageChangeCallback();
-            callback.PageSelected += delegate { OnPageSelected(); };
+            var pageChangeCallback = new PageChangeCallback();
+            pageChangeCallback.PageSelected += delegate { OnPageSelected(); };
 
-            _pager.RegisterOnPageChangeCallback(callback);
+            _pager.RegisterOnPageChangeCallback(pageChangeCallback);
 
             _adapter = new IntroPagerAdapter(this, _pageCount);
             _pager.Adapter = _adapter;
+
+            var backPressCallback = new BackPressCallback(true);
+            backPressCallback.BackPressed += delegate { _pager.CurrentItem--; };
+
+            OnBackPressedDispatcher.AddCallback(backPressCallback);
 
             OnPageSelected();
         }
@@ -73,11 +79,6 @@ namespace AuthenticatorPro.Droid.Activity
             }
 
             OnPageSelected();
-        }
-
-        public override void OnBackPressed()
-        {
-            _pager.CurrentItem--;
         }
     }
 }

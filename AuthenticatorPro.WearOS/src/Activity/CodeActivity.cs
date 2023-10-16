@@ -1,25 +1,24 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
+using System.Timers;
 using Android.App;
 using Android.Graphics;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
 using AndroidX.AppCompat.App;
-using AuthenticatorPro.Droid.Shared.Data;
-using AuthenticatorPro.Shared.Data;
-using AuthenticatorPro.Shared.Data.Generator;
-using AuthenticatorPro.Shared.Util;
-using AuthenticatorPro.WearOS.CustomView;
+using AuthenticatorPro.Core;
+using AuthenticatorPro.Core.Generator;
+using AuthenticatorPro.Core.Util;
+using AuthenticatorPro.Droid.Shared;
+using AuthenticatorPro.WearOS.Interface;
 using AuthenticatorPro.WearOS.Util;
-using System;
-using System.Timers;
 
 namespace AuthenticatorPro.WearOS.Activity
 {
-    [Activity]
-    internal class CodeActivity : AppCompatActivity
+    [Activity(Theme = "@style/AppTheme")]
+    public class CodeActivity : AppCompatActivity
     {
         private IGenerator _generator;
 
@@ -50,7 +49,7 @@ namespace AuthenticatorPro.WearOS.Activity
 
             issuerText.Text = issuer;
 
-            if (String.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(username))
             {
                 usernameText.Visibility = ViewStates.Gone;
             }
@@ -64,7 +63,10 @@ namespace AuthenticatorPro.WearOS.Activity
 
             if (hasCustomIcon)
             {
+#pragma warning disable CA1422
+                // TODO: Use SDK 33 method
                 var bitmap = (Bitmap) Intent.Extras.GetParcelable("icon");
+#pragma warning restore CA1422
 
                 if (bitmap != null)
                 {
@@ -86,14 +88,11 @@ namespace AuthenticatorPro.WearOS.Activity
             var algorithm = (HashAlgorithm) Intent.Extras.GetInt("algorithm");
 
             var secret = Intent.Extras.GetString("secret");
+            var pin = Intent.Extras.GetString("pin");
+
             var type = (AuthenticatorType) Intent.Extras.GetInt("type");
 
-            _generator = type switch
-            {
-                AuthenticatorType.MobileOtp => new MobileOtp(secret, _digits),
-                AuthenticatorType.SteamOtp => new SteamOtp(secret),
-                _ => new Totp(secret, _period, algorithm, _digits)
-            };
+            _generator = AuthenticatorUtil.GetGenerator(type, secret, pin, _period, algorithm, _digits);
 
             _authProgressLayout.Period = _period * 1000;
             _authProgressLayout.TimerFinished += Refresh;
@@ -113,13 +112,7 @@ namespace AuthenticatorPro.WearOS.Activity
 
         private void Refresh(object sender = null, ElapsedEventArgs args = null)
         {
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var generationOffset = now - (now % _period);
-
-            var code = _generator.Compute(generationOffset);
-            var renewTime = generationOffset + _period;
-
-            var secondsRemaining = Math.Max(renewTime - now, 0);
+            var (code, secondsRemaining) = AuthenticatorUtil.GetCodeAndRemainingSeconds(_generator, _period);
 
             RunOnUiThread(delegate
             {

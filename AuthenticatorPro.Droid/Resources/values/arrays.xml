@@ -5,6 +5,7 @@
         <item>@string/authTypeCounter</item>
         <item>@string/authTypeMobileOtp</item>
         <item>@string/authTypeSteam</item>
+        <item>@string/authTypeYandex</item>
     </string-array>
     <string-array name="authAlgorithms">
         <item>@string/authAlgorithmSHA1</item>
@@ -27,11 +28,11 @@
         <item>@string/introThemesSummary</item>
     </string-array>
     <integer-array name="introImage">
-        <item>@mipmap/ic_launcher</item>
-        <item>@drawable/ic_lock</item>
-        <item>@drawable/ic_cloud</item>
-        <item>@drawable/ic_category</item>
-        <item>@drawable/ic_theme</item>
+        <item>@drawable/big_ic_logo</item>
+        <item>@drawable/big_ic_lock</item>
+        <item>@drawable/big_ic_save</item>
+        <item>@drawable/big_ic_category</item>
+        <item>@drawable/big_ic_theme</item>
     </integer-array>
 
     <string-array name="languageNames">
@@ -44,13 +45,19 @@
         <item>@string/italian</item>
         <item>@string/dutch</item>
         <item>@string/polish</item>
+        <item>@string/portuguese</item>
         <item>@string/brazilianPortuguese</item>
         <item>@string/russian</item>
         <item>@string/slovak</item>
+        <item>@string/finnish</item>
+        <item>@string/swedish</item>
         <item>@string/turkish</item>
+        <item>@string/ukrainian</item>
+        <item>@string/arabic</item>
         <item>@string/thai</item>
         <item>@string/japanese</item>
         <item>@string/chineseSimplified</item>
+        <item>@string/korean</item>
     </string-array>
     <string-array name="languageValues">
         <item>system</item>
@@ -62,13 +69,19 @@
         <item>it</item>
         <item>nl</item>
         <item>pl</item>
+        <item>pt</item>
         <item>pt-BR</item>
         <item>ru</item>
         <item>sk</item>
+        <item>fi</item>
+        <item>sv</item>
         <item>tr</item>
+        <item>uk</item>
+        <item>ar</item>
         <item>th</item>
         <item>ja</item>
         <item>zh-CN</item>
+        <item>ko</item>
     </string-array>
 
     <string-array name="timeoutNames">
@@ -88,15 +101,34 @@
         <item>600</item>
     </string-array>
 
+    <string-array name="tapToRevealDurationNames">
+        <item>@string/timeout5Sec</item>
+        <item>@string/timeout10Sec</item>
+        <item>@string/timeout20Sec</item>
+        <item>@string/timeout30Sec</item>
+        <item>@string/timeout1Min</item>
+    </string-array>
+    <string-array name="tapToRevealDurationValues">
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
+    </string-array>
+
     <string-array name="themeNames">
         <item>@string/systemDefault</item>
+        <item>@string/systemDefaultBlack</item>
         <item>@string/lightTheme</item>
         <item>@string/darkTheme</item>
+        <item>@string/blackTheme</item>
     </string-array>
     <string-array name="themeValues">
         <item>system</item>
+        <item>system-black</item>
         <item>light</item>
         <item>dark</item>
+        <item>black</item>
     </string-array>
 
     <string-array name="viewModeNames">

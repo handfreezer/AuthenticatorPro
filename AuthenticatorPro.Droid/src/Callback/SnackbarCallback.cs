@@ -1,8 +1,8 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using Google.Android.Material.Snackbar;
 using System;
+using Google.Android.Material.Snackbar;
 
 namespace AuthenticatorPro.Droid.Callback
 {
@@ -20,7 +20,7 @@ namespace AuthenticatorPro.Droid.Callback
         public override void OnShown(Snackbar sb)
         {
             base.OnShown(sb);
-            Shown?.Invoke(sb, null);
+            Shown?.Invoke(sb, EventArgs.Empty);
         }
     }
 }

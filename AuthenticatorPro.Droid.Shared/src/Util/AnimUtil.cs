@@ -1,9 +1,9 @@
-// Copyright (C) 2021 jmh
+// Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
+using System;
 using Android.Views;
 using Android.Views.Animations;
-using System;
 
 namespace AuthenticatorPro.Droid.Shared.Util
 {
@@ -12,7 +12,7 @@ namespace AuthenticatorPro.Droid.Shared.Util
         public const int LengthShort = 200;
         public const int LengthLong = 500;
 
-        public static void FadeInView(Android.Views.View view, int length, bool overrideAnim = false,
+        public static void FadeInView(View view, int length, bool overrideAnim = false,
             Action callback = null)
         {
             if (overrideAnim)
@@ -38,7 +38,7 @@ namespace AuthenticatorPro.Droid.Shared.Util
             view.StartAnimation(anim);
         }
 
-        public static void FadeOutView(Android.Views.View view, int length, bool overrideAnim = false,
+        public static void FadeOutView(View view, int length, bool overrideAnim = false,
             Action callback = null)
         {
             if (overrideAnim)
