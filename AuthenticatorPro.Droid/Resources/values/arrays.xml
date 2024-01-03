@@ -54,6 +54,7 @@
         <item>@string/turkish</item>
         <item>@string/ukrainian</item>
         <item>@string/arabic</item>
+        <item>@string/kannada</item>
         <item>@string/thai</item>
         <item>@string/japanese</item>
         <item>@string/chineseSimplified</item>
@@ -78,6 +79,7 @@
         <item>tr</item>
         <item>uk</item>
         <item>ar</item>
+        <item>kn-IN</item>
         <item>th</item>
         <item>ja</item>
         <item>zh-CN</item>
@@ -143,11 +145,13 @@
     </string-array>
 
     <string-array name="codeGroupSizeNames">
+        <item>@string/none</item>
         <item>@string/two</item>
         <item>@string/three</item>
         <item>@string/four</item>
     </string-array>
     <string-array name="codeGroupSizeValues">
+        <item>0</item>
         <item>2</item>
         <item>3</item>
         <item>4</item>

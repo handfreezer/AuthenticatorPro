@@ -20,7 +20,7 @@ namespace AuthenticatorPro.Core
         [GeneratedRegex("([^?=&]+)(=([^&]*))?")]
         private static partial Regex QueryStringRegex();
 
-        [GeneratedRegex(@"^otpauth://([a-z]+)/([^?]*)(.*)$")]
+        [GeneratedRegex("^otpauth://([a-z]+)/([^?]*)(.*)$")]
         private static partial Regex OtpAuthUriRegex();
 
         [GeneratedRegex("^(.*?):(.*)$")]
@@ -168,16 +168,13 @@ namespace AuthenticatorPro.Core
                 throw new ArgumentException("Counter cannot be negative");
             }
 
-            if (!args.ContainsKey("secret"))
+            if (!args.TryGetValue("secret", out var secret))
             {
                 throw new ArgumentException("Secret parameter is required");
             }
 
-            var icon = iconResolver.FindServiceKeyByName(args.TryGetValue("icon", out var iconParam)
-                ? iconParam
-                : issuer);
-            
-            var secret = SecretUtil.Clean(args["secret"], type);
+            secret = SecretUtil.Clean(secret, type);
+            var icon = iconResolver.FindServiceKeyByName(args.GetValueOrDefault("icon", issuer));
 
             var pinLength = 0;
 
@@ -221,10 +218,7 @@ namespace AuthenticatorPro.Core
 
         public static OtpAuthMigration ParseOtpAuthMigrationUri(string uri)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
 
             var real = Uri.UnescapeDataString(uri);
             var match = OtpAuthMigrationRegex().Match(real);

@@ -1,8 +1,6 @@
 // Copyright (C) 2022 jmh
 // SPDX-License-Identifier: GPL-3.0-only
 
-using System;
-
 namespace AuthenticatorPro.Core.Backup
 {
     public class BackupResult : IResult
@@ -16,7 +14,7 @@ namespace AuthenticatorPro.Core.Backup
 
         public bool IsVoid()
         {
-            return String.IsNullOrEmpty(FileName);
+            return string.IsNullOrEmpty(FileName);
         }
     }
 }

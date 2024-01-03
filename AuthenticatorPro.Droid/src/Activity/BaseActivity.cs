@@ -187,6 +187,11 @@ namespace AuthenticatorPro.Droid.Activity
             {
                 Theme.ApplyStyle(Resource.Style.OverlayBlack, true);
             }
+
+            if (!Preferences.SystemFont)
+            {
+                Theme.ApplyStyle(Resource.Style.OverlayCustomFont, true);
+            }
         }
 
         private void UpdateStatusBar()
@@ -332,6 +337,7 @@ namespace AuthenticatorPro.Droid.Activity
         protected void StartWebBrowserActivity(string url)
         {
             var intent = new Intent(Intent.ActionView, Uri.Parse(url));
+            intent.AddCategory(Intent.CategoryBrowsable);
 
             try
             {

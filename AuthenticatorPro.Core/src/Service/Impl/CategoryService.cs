@@ -31,25 +31,14 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public Task<Category> GetCategoryByIdAsync(string id)
         {
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
+            ArgumentNullException.ThrowIfNull(id);
             return _categoryRepository.GetAsync(id);
         }
 
         public async Task TransferAsync(Category initial, Category next)
         {
-            if (initial == null)
-            {
-                throw new ArgumentNullException(nameof(initial));
-            }
-
-            if (next == null)
-            {
-                throw new ArgumentNullException(nameof(next));
-            }
+            ArgumentNullException.ThrowIfNull(initial);
+            ArgumentNullException.ThrowIfNull(next);
 
             await _categoryRepository.CreateAsync(next);
             await _authenticatorCategoryRepository.TransferCategoryAsync(initial, next);
@@ -58,20 +47,13 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public Task AddCategoryAsync(Category category)
         {
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
-
+            ArgumentNullException.ThrowIfNull(category);
             return _categoryRepository.CreateAsync(category);
         }
 
         public async Task<int> AddManyCategoriesAsync(IEnumerable<Category> categories)
         {
-            if (categories == null)
-            {
-                throw new ArgumentNullException(nameof(categories));
-            }
+            ArgumentNullException.ThrowIfNull(categories);
 
             var added = 0;
 
@@ -94,10 +76,7 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task<ValueTuple<int, int>> AddOrUpdateManyCategoriesAsync(IEnumerable<Category> categories)
         {
-            if (categories == null)
-            {
-                throw new ArgumentNullException(nameof(categories));
-            }
+            ArgumentNullException.ThrowIfNull(categories);
 
             var list = categories.ToList();
             var added = await AddManyCategoriesAsync(list);
@@ -108,10 +87,7 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task<int> UpdateManyCategoriesAsync(IEnumerable<Category> categories)
         {
-            if (categories == null)
-            {
-                throw new ArgumentNullException(nameof(categories));
-            }
+            ArgumentNullException.ThrowIfNull(categories);
 
             var updated = 0;
 
@@ -133,10 +109,7 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task<int> AddManyBindingsAsync(IEnumerable<AuthenticatorCategory> acs)
         {
-            if (acs == null)
-            {
-                throw new ArgumentNullException(nameof(acs));
-            }
+            ArgumentNullException.ThrowIfNull(acs);
 
             var added = 0;
 
@@ -159,10 +132,7 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task<(int, int)> AddOrUpdateManyBindingsAsync(IEnumerable<AuthenticatorCategory> acs)
         {
-            if (acs == null)
-            {
-                throw new ArgumentNullException(nameof(acs));
-            }
+            ArgumentNullException.ThrowIfNull(acs);
 
             var list = acs.ToList();
             var added = await AddManyBindingsAsync(list);
@@ -173,10 +143,7 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task<int> UpdateManyBindingsAsync(IEnumerable<AuthenticatorCategory> acs)
         {
-            if (acs == null)
-            {
-                throw new ArgumentNullException(nameof(acs));
-            }
+            ArgumentNullException.ThrowIfNull(acs);
 
             var updated = 0;
 
@@ -197,37 +164,23 @@ namespace AuthenticatorPro.Core.Service.Impl
             return updated;
         }
 
-        public async Task AddBindingAsync(Authenticator authenticator, Category category)
+        public Task AddBindingAsync(Authenticator authenticator, Category category)
         {
-            if (authenticator == null)
-            {
-                throw new ArgumentNullException(nameof(authenticator));
-            }
+            ArgumentNullException.ThrowIfNull(authenticator);
+            ArgumentNullException.ThrowIfNull(category);
 
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
-
-            await _authenticatorCategoryRepository.CreateAsync(new AuthenticatorCategory
+            return _authenticatorCategoryRepository.CreateAsync(new AuthenticatorCategory
             {
                 AuthenticatorSecret = authenticator.Secret, CategoryId = category.Id
             });
         }
 
-        public async Task RemoveBindingAsync(Authenticator authenticator, Category category)
+        public Task RemoveBindingAsync(Authenticator authenticator, Category category)
         {
-            if (authenticator == null)
-            {
-                throw new ArgumentNullException(nameof(authenticator));
-            }
+            ArgumentNullException.ThrowIfNull(authenticator);
+            ArgumentNullException.ThrowIfNull(category);
 
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
-
-            await _authenticatorCategoryRepository.DeleteAsync(new AuthenticatorCategory
+            return _authenticatorCategoryRepository.DeleteAsync(new AuthenticatorCategory
             {
                 AuthenticatorSecret = authenticator.Secret, CategoryId = category.Id
             });
@@ -235,32 +188,20 @@ namespace AuthenticatorPro.Core.Service.Impl
 
         public async Task DeleteWithCategoryBindingsASync(Category category)
         {
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
-
+            ArgumentNullException.ThrowIfNull(category);
             await _categoryRepository.DeleteAsync(category);
             await _authenticatorCategoryRepository.DeleteAllForCategoryAsync(category);
         }
 
         public Task<List<AuthenticatorCategory>> GetBindingsForAuthenticatorAsync(Authenticator authenticator)
         {
-            if (authenticator == null)
-            {
-                throw new ArgumentNullException(nameof(authenticator));
-            }
-
+            ArgumentNullException.ThrowIfNull(authenticator);
             return _authenticatorCategoryRepository.GetAllForAuthenticatorAsync(authenticator);
         }
 
         public Task<List<AuthenticatorCategory>> GetBindingsForCategoryAsync(Category category)
         {
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
-
+            ArgumentNullException.ThrowIfNull(category);
             return _authenticatorCategoryRepository.GetAllForCategoryAsync(category);
         }
 
